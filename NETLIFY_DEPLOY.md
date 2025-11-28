@@ -34,7 +34,7 @@ All configuration files have been created:
 4. **Set Environment Variables**
    - Go to: Site settings → Environment variables → Add variable
    - Key: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-   - Value: `AIzaSyC-MjwszwkhNnrt9Fhj6m84pgJAxewaCjw`
+   - Value: `<your-private-google-maps-api-key>`
    - Click "Save"
 
 5. **Deploy**
@@ -52,7 +52,7 @@ netlify login
 netlify deploy --create-site swvl-enterprise-transport --dir=.next --prod
 
 # After first deploy, set environment variable
-netlify env:set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY "AIzaSyC-MjwszwkhNnrt9Fhj6m84pgJAxewaCjw"
+netlify env:set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY "<your-private-google-maps-api-key>"
 
 # Redeploy with environment variable
 netlify deploy --prod --dir=.next

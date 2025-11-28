@@ -21,7 +21,7 @@
 
 3. **Set Environment Variables**
    - Go to Site settings → Environment variables
-   - Add: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` = `AIzaSyC-MjwszwkhNnrt9Fhj6m84pgJAxewaCjw`
+   - Add: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` = `<your-private-google-maps-api-key>`
 
 4. **Deploy**
    - Click "Deploy site"

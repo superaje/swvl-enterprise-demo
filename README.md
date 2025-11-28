@@ -80,7 +80,7 @@ npm run dev
 
 3. **Set Environment Variables**
    - Go to Site settings → Environment variables
-   - Add: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` = `AIzaSyC-MjwszwkhNnrt9Fhj6m84pgJAxewaCjw`
+   - Add: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` = `<your-private-google-maps-api-key>`
 
 4. **Deploy**
    - Click "Deploy site"
@@ -136,6 +136,13 @@ SWVL/
 - **Build command**: `npm run build`
 - **Publish directory**: `.next`
 - **Node version**: 18
+
+## Security & Access
+
+- Keep this repository private and restrict access to trusted collaborators only.
+- Store API keys and credentials in `.env.local` (see `.env.example`) or your hosting provider's secret manager—never commit them to Git.
+- Rotate the Google Maps API key if it has ever been exposed, and scope it only to the required domains/APIs.
+- Review deployment targets (Netlify, CI/CD) to verify that environment variables are configured there instead of hardcoding secrets.
 
 ## License
 
