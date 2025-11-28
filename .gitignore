@@ -9,6 +9,7 @@
 /coverage
 
 # next.js
+/.next.js
 /.next/
 /out/
 
@@ -30,6 +31,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# netlify
+.netlify/
 
 # typescript
 *.tsbuildinfo
