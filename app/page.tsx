@@ -5,78 +5,69 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useAppStore, Route, OptimizationScenario } from '@/lib/store';
 import { optimizeVehicles, generateRoutes, generateCurrentRoutes } from '@/lib/routeOptimizer';
-import CurrentRoutesPreview from '@/components/Optimization/CurrentRoutesPreview';
+import GoogleSheetView from '@/components/DataSheet/GoogleSheetView';
 import ScenarioComparison from '@/components/Optimization/ScenarioComparison';
 import GoogleMap from '@/components/Map/GoogleMap';
 import RouteVisualization from '@/components/Map/RouteVisualization';
-import LocationSearch from '@/components/Controls/LocationSearch';
-import PassengerSlider from '@/components/Controls/PassengerSlider';
-import ConstraintsInput from '@/components/Controls/ConstraintsInput';
-import dynamic from 'next/dynamic';
 import Button from '@/components/UI/Button';
 import LoadingSpinner from '@/components/UI/LoadingSpinner';
 import MonitoringDashboard from '@/components/Dashboard/MonitoringDashboard';
 import FeaturesSlider from '@/components/Features/FeaturesSlider';
-
-const VehicleSelector3D = dynamic(() => import('@/components/VehicleSelector/VehicleSelector3D'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-[500px]">
-      <LoadingSpinner size="lg" />
-    </div>
-  ),
-});
+import CTASection from '@/components/UI/CTASection';
 
 export default function Home() {
-  const [step, setStep] = useState<'location' | 'config' | 'vehicles' | 'preview' | 'scenarios' | 'results'>('location');
+  const [screen, setScreen] = useState<'data' | 'optimization' | 'results'>('data');
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [costSavingRoutes, setCostSavingRoutes] = useState<Route[]>([]);
   const [experienceRoutes, setExperienceRoutes] = useState<Route[]>([]);
+  const [optimumRoutes, setOptimumRoutes] = useState<Route[]>([]);
   
   const officeLocation = useAppStore((state) => state.officeLocation);
   const passengerCount = useAppStore((state) => state.passengerCount);
   const constraints = useAppStore((state) => state.constraints);
-  const selectedVehicles = useAppStore((state) => state.selectedVehicles);
   const routes = useAppStore((state) => state.routes);
   const currentRoutes = useAppStore((state) => state.currentRoutes);
   const optimizationScenario = useAppStore((state) => state.optimizationScenario);
   const isLoading = useAppStore((state) => state.isLoading);
-  const setSelectedVehicles = useAppStore((state) => state.setSelectedVehicles);
+  
   const setRoutes = useAppStore((state) => state.setRoutes);
   const setCurrentRoutes = useAppStore((state) => state.setCurrentRoutes);
   const setOptimizationScenario = useAppStore((state) => state.setOptimizationScenario);
   const setIsLoading = useAppStore((state) => state.setIsLoading);
+  const setOfficeLocation = useAppStore((state) => state.setOfficeLocation);
+  const setPassengerCount = useAppStore((state) => state.setPassengerCount);
 
-  const handleLocationSelect = (location: { lat: number; lng: number; address: string }) => {
-    useAppStore.getState().setOfficeLocation(location);
-    setTimeout(() => setStep('config'), 500);
-  };
+  // Initialize with default office location (UAE) and 60+ passengers
+  useEffect(() => {
+    if (!officeLocation) {
+      setOfficeLocation({
+        lat: 24.36524921,
+        lng: 54.56290389,
+        address: 'Abu Dhabi, UAE',
+      });
+    }
+    if (passengerCount < 60) {
+      setPassengerCount(65);
+    }
+  }, [officeLocation, passengerCount, setOfficeLocation, setPassengerCount]);
 
-  const handleGeneratePreview = async () => {
+  const handleOptimize = async () => {
     if (!officeLocation) return;
 
     setIsLoading(true);
     
-    // Generate current routes (preview)
+    // Generate current routes (inefficient)
     const previewRoutes = generateCurrentRoutes(officeLocation, passengerCount, constraints);
     setCurrentRoutes(previewRoutes);
-    
-    setIsLoading(false);
-    setStep('preview');
-  };
-
-  const handleTransform = async () => {
-    if (!officeLocation) return;
-
-    setIsLoading(true);
     
     // Simulate optimization delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    // Generate both optimization scenarios
+    // Generate all three optimization scenarios
     const costVehicles = optimizeVehicles(passengerCount, constraints, 'cost-saving');
     const experienceVehicles = optimizeVehicles(passengerCount, constraints, 'experience-optimizing');
+    const optimumVehicles = optimizeVehicles(passengerCount, constraints, 'optimum');
 
     const costRoutes = generateRoutes(
       officeLocation,
@@ -94,35 +85,62 @@ export default function Home() {
       'experience-optimizing'
     );
 
+    const optRoutes = generateRoutes(
+      officeLocation,
+      passengerCount,
+      constraints,
+      optimumVehicles,
+      'optimum'
+    );
+
     setCostSavingRoutes(costRoutes);
     setExperienceRoutes(expRoutes);
+    setOptimumRoutes(optRoutes);
     
     setIsLoading(false);
-    setStep('scenarios');
+    setScreen('optimization');
   };
 
   const handleSelectScenario = (scenario: OptimizationScenario) => {
     if (!scenario) return;
     setOptimizationScenario(scenario);
+    
     if (scenario === 'cost-saving') {
       setRoutes(costSavingRoutes);
-      setSelectedVehicles(optimizeVehicles(passengerCount, constraints, 'cost-saving'));
-    } else {
+    } else if (scenario === 'experience-optimizing') {
       setRoutes(experienceRoutes);
-      setSelectedVehicles(optimizeVehicles(passengerCount, constraints, 'experience-optimizing'));
+    } else if (scenario === 'optimum') {
+      setRoutes(optimumRoutes);
     }
-    setStep('results');
+    
+    setScreen('results');
+  };
+
+  const handleBookCall = () => {
+    window.open('https://calendly.com/swvl-advisor', '_blank');
+  };
+
+  const handleCallNow = () => {
+    // You can integrate with a phone call service or show a form
+    window.open('tel:+971501234567', '_self');
   };
 
   const handleReset = () => {
     useAppStore.getState().reset();
-    setStep('location');
+    setScreen('data');
+    setCostSavingRoutes([]);
+    setExperienceRoutes([]);
+    setOptimumRoutes([]);
   };
 
   // Calculate trip metrics
   const totalDistance = routes.reduce((sum, route) => sum + route.totalDistance, 0);
   const avgTime = routes.length > 0 
     ? Math.round(routes.reduce((sum, route) => sum + route.totalTime, 0) / routes.length)
+    : 0;
+  const totalStops = routes.reduce((sum, route) => sum + route.pickupPoints.length, 0);
+  const avgSpeed = routes.reduce((sum, r) => sum + r.totalTime, 0) > 0
+    ? Math.round((routes.reduce((sum, r) => sum + r.totalDistance, 0) / routes.reduce((sum, r) => sum + r.totalTime, 0)) * 60)
     : 0;
 
   return (
@@ -155,7 +173,7 @@ export default function Home() {
                 <p className="text-xs sm:text-sm text-swvl-gray-500 font-medium">Enterprise Transport Solutions</p>
               </motion.div>
             </div>
-            {step !== 'location' && (
+            {screen !== 'data' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -171,48 +189,43 @@ export default function Home() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* Progress Steps */}
+        {/* Screen Indicator */}
         <div className="mb-6 sm:mb-8">
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center justify-center gap-4">
             {[
-              { id: 'location', label: 'Location' },
-              { id: 'config', label: 'Configuration' },
-              { id: 'vehicles', label: 'Vehicles' },
-              { id: 'preview', label: 'Preview' },
-              { id: 'scenarios', label: 'Optimize' },
+              { id: 'data', label: 'Your Data' },
+              { id: 'optimization', label: 'Optimization' },
               { id: 'results', label: 'Results' },
             ].map((s, index) => {
-              const stepIndex = ['location', 'config', 'vehicles', 'preview', 'scenarios', 'results'].indexOf(step);
-              const isActive = index <= stepIndex;
-              const isCurrent = s.id === step;
+              const screenIndex = ['data', 'optimization', 'results'].indexOf(screen);
+              const isActive = index <= screenIndex;
+              const isCurrent = s.id === screen;
 
               return (
-                <div key={s.id} className="flex items-center flex-1 min-w-0">
-                  <div className="flex flex-col items-center flex-1 min-w-0">
+                <div key={s.id} className="flex items-center">
+                  <div className="flex flex-col items-center">
                     <motion.div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-base transition-all ${
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base transition-all ${
                         isActive
                           ? 'bg-gradient-to-br from-swvl-primary to-swvl-accent text-white shadow-lg'
                           : 'bg-swvl-gray-200 text-swvl-gray-500'
                       }`}
                       animate={{ scale: isCurrent ? 1.15 : 1 }}
-                      whileHover={{ scale: 1.1 }}
                       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                     >
                       {index + 1}
                     </motion.div>
                     <span
-                      className={`mt-1 sm:mt-2 text-xs sm:text-sm font-medium text-center ${
+                      className={`mt-2 text-xs sm:text-sm font-medium ${
                         isActive ? 'text-swvl-dark' : 'text-swvl-gray-400'
                       }`}
                     >
-                      <span className="hidden sm:inline">{s.label}</span>
-                      <span className="sm:hidden">{s.label.substring(0, 4)}</span>
+                      {s.label}
                     </span>
                   </div>
-                  {index < 5 && (
+                  {index < 2 && (
                     <motion.div
-                      className={`h-1 flex-1 mx-1 sm:mx-2 rounded-full ${
+                      className={`h-1 w-16 sm:w-24 mx-2 sm:mx-4 rounded-full ${
                         isActive ? 'bg-gradient-to-r from-swvl-primary to-swvl-accent' : 'bg-swvl-gray-200'
                       }`}
                       initial={{ scaleX: 0 }}
@@ -236,224 +249,88 @@ export default function Home() {
               transition={{ duration: 0.5, ease: 'easeOut' }}
             >
               <div className="w-full h-full">
-              <GoogleMap 
-                onLocationSelect={handleLocationSelect}
-                onMapReady={(mapInstance, loaded) => {
-                  setMap(mapInstance);
-                  setIsMapLoaded(loaded);
-                }}
-              />
-              {isMapLoaded && map && (
-                <RouteVisualization 
-                  map={map} 
-                  isLoaded={isMapLoaded}
-                  routes={step === 'preview' ? currentRoutes : routes}
+                <GoogleMap 
+                  onLocationSelect={(location) => {
+                    setOfficeLocation(location);
+                  }}
+                  onMapReady={(mapInstance, loaded) => {
+                    setMap(mapInstance);
+                    setIsMapLoaded(loaded);
+                  }}
                 />
-              )}
+                {isMapLoaded && map && screen !== 'data' && (
+                  <RouteVisualization 
+                    map={map} 
+                    isLoaded={isMapLoaded}
+                    routes={screen === 'optimization' && !optimizationScenario ? currentRoutes : routes}
+                  />
+                )}
               </div>
             </motion.div>
           </div>
 
-          {/* Right Column - Controls */}
+          {/* Right Column - Content */}
           <div className="space-y-4 sm:space-y-6 order-1 lg:order-2">
             <AnimatePresence mode="wait">
-              {/* Step 1: Location Selection */}
-              {step === 'location' && (
+              {/* Screen 1: Data Sheet */}
+              {screen === 'data' && (
                 <motion.div
-                  key="location"
+                  key="data"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 p-4 sm:p-6"
                 >
-                  <motion.h2 
-                    className="text-lg sm:text-xl font-semibold text-swvl-dark mb-2"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                  >
-                    Where is your office located?
-                  </motion.h2>
-                  <motion.p 
-                    className="text-swvl-gray-500 mb-4 sm:mb-6 text-xs sm:text-sm"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    Enter your office address in the UAE to begin optimizing your employee transportation routes.
-                  </motion.p>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <LocationSearch />
-                  </motion.div>
+                  <GoogleSheetView onOptimize={handleOptimize} />
                 </motion.div>
               )}
 
-              {/* Step 2: Configuration */}
-              {step === 'config' && (
+              {/* Screen 2: Optimization Options */}
+              {screen === 'optimization' && (
                 <motion.div
-                  key="config"
+                  key="optimization"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.4, ease: 'easeOut' }}
                   className="space-y-4 sm:space-y-6"
                 >
-                  <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 p-4 sm:p-6">
-                    <motion.h2 
-                      className="text-lg sm:text-xl font-semibold text-swvl-dark mb-2"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      Set your transportation requirements
-                    </motion.h2>
-                    <motion.p 
-                      className="text-swvl-gray-500 mb-4 sm:mb-6 text-xs sm:text-sm"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      Configure the number of employees and your service constraints to find the optimal solution.
-                    </motion.p>
-                    <div className="space-y-4 sm:space-y-6">
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                      >
-                        <PassengerSlider />
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                      >
-                        <ConstraintsInput />
-                      </motion.div>
-                    </div>
-                    <motion.div 
-                      className="mt-4 sm:mt-6"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 }}
-                    >
-                      <Button
-                        onClick={() => setStep('vehicles')}
-                        disabled={!officeLocation}
-                        className="w-full"
-                      >
-                        Continue to Vehicle Selection
-                      </Button>
-                    </motion.div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 3: Vehicle Selection */}
-              {step === 'vehicles' && (
-                <motion.div
-                  key="vehicles"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 p-4 sm:p-6"
-                >
-                  <motion.div 
-                    className="h-[400px] sm:h-[500px]"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <VehicleSelector3D />
-                  </motion.div>
-                  <motion.div 
-                    className="mt-4 sm:mt-6"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <Button
-                      onClick={handleGeneratePreview}
-                      disabled={selectedVehicles.length === 0 || isLoading}
-                      className="w-full bg-gradient-to-r from-swvl-primary to-swvl-accent hover:from-swvl-accent hover:to-swvl-primary transition-all duration-300"
-                    >
-                      {isLoading ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <LoadingSpinner size="sm" />
-                          Generating Preview...
-                        </span>
-                      ) : (
-                        'Preview Current Routes'
-                      )}
-                    </Button>
-                  </motion.div>
-                </motion.div>
-              )}
-
-              {/* Step 4: Preview Current Routes */}
-              {step === 'preview' && (
-                <motion.div
-                  key="preview"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="space-y-4 sm:space-y-6"
-                >
-                  <CurrentRoutesPreview routes={currentRoutes} onTransform={handleTransform} />
-                  
-                  {isLoading && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center justify-center p-8"
-                    >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center p-12">
                       <LoadingSpinner size="lg" />
-                    </motion.div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 p-4 sm:p-6">
+                        <h2 className="text-lg sm:text-xl font-semibold text-swvl-dark mb-2">
+                          Optimized Routes Generated
+                        </h2>
+                        <p className="text-xs sm:text-sm text-swvl-gray-500 mb-4">
+                          Routes mapped to your office location. Choose your optimization strategy:
+                        </p>
+                      </div>
+
+                      <ScenarioComparison
+                        costSavingRoutes={costSavingRoutes}
+                        experienceRoutes={experienceRoutes}
+                        optimumRoutes={optimumRoutes}
+                        currentRoutes={currentRoutes}
+                        onSelectScenario={handleSelectScenario}
+                        selectedScenario={optimizationScenario}
+                      />
+
+                      <div className="flex justify-between">
+                        <Button variant="outline" onClick={() => setScreen('data')}>
+                          Back
+                        </Button>
+                      </div>
+                    </>
                   )}
-                  
-                  <div className="flex justify-between">
-                    <Button variant="outline" onClick={() => setStep('vehicles')}>
-                      Back
-                    </Button>
-                  </div>
                 </motion.div>
               )}
 
-              {/* Step 5: Optimization Scenarios */}
-              {step === 'scenarios' && (
-                <motion.div
-                  key="scenarios"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="space-y-4 sm:space-y-6"
-                >
-                  <ScenarioComparison
-                    costSavingRoutes={costSavingRoutes}
-                    experienceRoutes={experienceRoutes}
-                    currentRoutes={currentRoutes}
-                    onSelectScenario={handleSelectScenario}
-                    selectedScenario={optimizationScenario}
-                  />
-                  
-                  <div className="flex justify-between">
-                    <Button variant="outline" onClick={() => setStep('preview')}>
-                      Back
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 6: Results */}
-              {step === 'results' && (
+              {/* Screen 3: Results */}
+              {screen === 'results' && (
                 <motion.div
                   key="results"
                   initial={{ opacity: 0, y: 20 }}
@@ -471,21 +348,18 @@ export default function Home() {
                     >
                       Your Optimized Transportation Solution
                     </motion.h2>
-                    <motion.div
+                    <motion.p
+                      className="text-swvl-gray-500 mb-4 sm:mb-6 text-xs sm:text-sm"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.2 }}
-                      className="mb-4 sm:mb-6"
                     >
-                      <p className="text-swvl-gray-500 mb-2 text-xs sm:text-sm">
-                        {optimizationScenario === 'cost-saving' 
-                          ? '💰 Cost-Saving Optimization: Minimizing operational costs with larger vehicles'
-                          : '⭐ Experience-Optimizing: Enhancing user experience with optimized routes'}
-                      </p>
-                      <p className="text-swvl-gray-500 text-xs sm:text-sm">
-                        We&apos;ve generated {routes.length} optimized route{routes.length !== 1 ? 's' : ''} to transport {passengerCount} employee{passengerCount !== 1 ? 's' : ''} efficiently to your office location.
-                      </p>
-                    </motion.div>
+                      {optimizationScenario === 'cost-saving' 
+                        ? '💰 Cost Efficient: Minimizing operational costs with larger vehicles'
+                        : optimizationScenario === 'optimum'
+                        ? '⚖️ Optimum: Balanced approach for cost and experience'
+                        : '⭐ Experience: Optimizing for employee comfort and shorter routes'}
+                    </motion.p>
 
                     <div className="space-y-3 sm:space-y-4">
                       {routes.map((route, index) => (
@@ -518,108 +392,67 @@ export default function Home() {
                         </motion.div>
                       ))}
                     </div>
-
-                    <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-3 sm:gap-4">
-                      <Button variant="outline" onClick={handleReset} className="flex-1">
-                        Start Over
-                      </Button>
-                      <Button 
-                        onClick={() => setStep('config')} 
-                        className="flex-1 bg-gradient-to-r from-swvl-primary to-swvl-accent hover:from-swvl-accent hover:to-swvl-primary transition-all duration-300"
-                      >
-                        Adjust Settings
-                      </Button>
-                    </div>
                   </div>
 
                   {/* Monitoring Dashboard */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.5 }}
-                    className="mt-4 sm:mt-6"
-                  >
-                    <MonitoringDashboard />
-                  </motion.div>
+                  <MonitoringDashboard />
 
                   {/* Features Slider */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.7, duration: 0.5 }}
-                    className="mt-4 sm:mt-6"
-                  >
-                    <FeaturesSlider />
-                  </motion.div>
+                  <FeaturesSlider />
 
                   {/* Trip Metrics */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8, duration: 0.5 }}
-                    className="mt-4 sm:mt-6"
+                    transition={{ delay: 0.6, duration: 0.5 }}
+                    className="bg-gradient-to-br from-swvl-light to-white rounded-xl p-4 sm:p-6 border border-swvl-gray-200"
                   >
-                    <div className="bg-gradient-to-br from-swvl-light to-white rounded-xl p-4 sm:p-6 border border-swvl-gray-200">
-                      <h4 className="text-sm sm:text-base font-semibold text-swvl-dark mb-3 sm:mb-4">Trip Metrics</h4>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                        <div className="text-center">
-                          <p className="text-2xl sm:text-3xl font-bold text-swvl-primary mb-1">
-                            {totalDistance.toFixed(1)}
-                          </p>
-                          <p className="text-xs text-swvl-gray-500">Total Distance (km)</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-2xl sm:text-3xl font-bold text-swvl-primary mb-1">
-                            {avgTime}
-                          </p>
-                          <p className="text-xs text-swvl-gray-500">Avg. Time (min)</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-2xl sm:text-3xl font-bold text-swvl-primary mb-1">
-                            {routes.reduce((sum, r) => sum + r.pickupPoints.length, 0)}
-                          </p>
-                          <p className="text-xs text-swvl-gray-500">Total Stops</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-2xl sm:text-3xl font-bold text-swvl-primary mb-1">
-                            {Math.round((routes.reduce((sum, r) => sum + r.totalDistance, 0) / routes.reduce((sum, r) => sum + r.totalTime, 0)) * 60)}
-                          </p>
-                          <p className="text-xs text-swvl-gray-500">Avg. Speed (km/h)</p>
-                        </div>
+                    <h4 className="text-sm sm:text-base font-semibold text-swvl-dark mb-3 sm:mb-4">Trip Metrics</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl sm:text-3xl font-bold text-swvl-primary mb-1">
+                          {totalDistance.toFixed(1)}
+                        </p>
+                        <p className="text-xs text-swvl-gray-500">Total Distance (km)</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl sm:text-3xl font-bold text-swvl-primary mb-1">
+                          {avgTime}
+                        </p>
+                        <p className="text-xs text-swvl-gray-500">Avg. Time (min)</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl sm:text-3xl font-bold text-swvl-primary mb-1">
+                          {totalStops}
+                        </p>
+                        <p className="text-xs text-swvl-gray-500">Total Stops</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl sm:text-3xl font-bold text-swvl-primary mb-1">
+                          {avgSpeed}
+                        </p>
+                        <p className="text-xs text-swvl-gray-500">Avg. Speed (km/h)</p>
                       </div>
                     </div>
                   </motion.div>
 
-                  {/* CTA Section - Less Intrusive */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.0, duration: 0.5 }}
-                    className="mt-4 sm:mt-6"
-                  >
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 sm:p-5 border border-swvl-gray-200 text-center">
-                      <p className="text-sm sm:text-base text-swvl-gray-600 mb-3 sm:mb-4">
-                        Ready to optimize your employee transportation?
-                      </p>
-                      <button
-                        onClick={() => window.open('https://calendly.com/swvl-advisor', '_blank')}
-                        className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-swvl-primary to-swvl-accent text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base"
-                      >
-                        Book a Free Consultation
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </button>
-                    </div>
-                  </motion.div>
+                  {/* CTA Section */}
+                  <CTASection onBookCall={handleBookCall} onCallNow={handleCallNow} />
+
+                  <div className="flex justify-between">
+                    <Button variant="outline" onClick={() => setScreen('optimization')}>
+                      Back
+                    </Button>
+                    <Button variant="outline" onClick={handleReset}>
+                      Start Over
+                    </Button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
       </div>
-
     </main>
   );
 }
-

@@ -12,7 +12,7 @@ export interface Constraints {
   maxDistance: number; // km
 }
 
-export type OptimizationScenario = 'cost-saving' | 'experience-optimizing' | null;
+export type OptimizationScenario = 'cost-saving' | 'experience-optimizing' | 'optimum' | null;
 
 export interface Route {
   id: string;

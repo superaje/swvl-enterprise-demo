@@ -97,7 +97,7 @@ function calculateDistance(
 export function optimizeVehicles(
   passengerCount: number,
   constraints: Constraints,
-  scenario: 'cost-saving' | 'experience-optimizing' = 'cost-saving'
+  scenario: 'cost-saving' | 'experience-optimizing' | 'optimum' = 'cost-saving'
 ): Vehicle[] {
   const selected: Vehicle[] = [];
   let remaining = passengerCount;
@@ -115,6 +115,33 @@ export function optimizeVehicles(
       for (let i = 0; i < numVehicles && remaining > 0; i++) {
         selected.push(vehicle);
         remaining -= vehicle.capacity;
+      }
+    }
+  } else if (scenario === 'optimum') {
+    // Optimum: Balanced approach - mix of vehicle sizes for optimal cost and experience
+    // Prefer medium-sized vehicles (vans) but use larger ones when needed
+    const sortedVehicles = [...VEHICLES].sort((a, b) => {
+      // Prefer vans (capacity ~14), then buses, then sedans
+      if (a.type === 'van') return -1;
+      if (b.type === 'van') return 1;
+      if (a.type === 'bus') return -1;
+      if (b.type === 'bus') return 1;
+      return a.capacity - b.capacity;
+    });
+    
+    // Try to fill vehicles to 85-90% capacity for balance
+    for (const vehicle of sortedVehicles) {
+      if (remaining <= 0) break;
+      
+      const targetCapacity = Math.floor(vehicle.capacity * 0.87);
+      const numVehicles = Math.ceil(remaining / targetCapacity);
+      
+      for (let i = 0; i < numVehicles && remaining > 0; i++) {
+        const passengersForThisVehicle = Math.min(targetCapacity, remaining);
+        if (passengersForThisVehicle > 0) {
+          selected.push(vehicle);
+          remaining -= passengersForThisVehicle;
+        }
       }
     }
   } else {
@@ -151,7 +178,7 @@ export function generateRoutes(
   passengerCount: number,
   constraints: Constraints,
   vehicles: Vehicle[],
-  scenario: 'cost-saving' | 'experience-optimizing' = 'cost-saving'
+  scenario: 'cost-saving' | 'experience-optimizing' | 'optimum' = 'cost-saving'
 ): Route[] {
   const routes: Route[] = [];
   let remainingPassengers = passengerCount;
@@ -169,6 +196,11 @@ export function generateRoutes(
       vehiclePassengers = Math.min(vehicle.capacity, remainingPassengers);
       maxDistance = constraints.maxDistance * 1.2; // Allow 20% more distance
       avgSpeed = 35; // Slightly slower due to larger vehicles
+    } else if (scenario === 'optimum') {
+      // Optimum: Balanced approach - moderate distances and speeds
+      vehiclePassengers = Math.min(Math.floor(vehicle.capacity * 0.87), remainingPassengers);
+      maxDistance = constraints.maxDistance; // Standard distance
+      avgSpeed = 40; // Balanced speed
     } else {
       // Experience-optimizing: Shorter distances, better coordination
       vehiclePassengers = Math.min(Math.floor(vehicle.capacity * 0.95), remainingPassengers);
@@ -193,13 +225,22 @@ export function generateRoutes(
     // Estimate time based on scenario
     const totalTime = Math.round((totalDistance / avgSpeed) * 60); // minutes
     
+    let timeMultiplier = 1.0;
+    if (scenario === 'cost-saving') {
+      timeMultiplier = 1.2;
+    } else if (scenario === 'optimum') {
+      timeMultiplier = 1.0;
+    } else {
+      timeMultiplier = 0.9;
+    }
+    
     routes.push({
       id: `route-${routes.length}-${scenario}`,
       vehicle,
       pickupPoints,
       path,
       totalDistance: Math.round(totalDistance * 10) / 10,
-      totalTime: Math.min(totalTime, constraints.maxTime * (scenario === 'cost-saving' ? 1.2 : 0.9)),
+      totalTime: Math.min(totalTime, constraints.maxTime * timeMultiplier),
     });
     
     remainingPassengers -= vehiclePassengers;
