@@ -33,8 +33,8 @@
 
 5. **Verify Environment Variables**
    - Go to: Site settings → Environment variables
-   - Ensure `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is set
-   - Value: `AIzaSyC-MjwszwkhNnrt9Fhj6m84pgJAxewaCjw`
+   - Ensure `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is stored as a secret (never hardcode the key in the repo)
+   - Value: `<retrieve-from-your-secret-manager>`
 
 6. **Trigger First Deploy**
    - Netlify will automatically trigger a deploy
