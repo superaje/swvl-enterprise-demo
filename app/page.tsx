@@ -209,28 +209,30 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Map */}
-          <div className="lg:sticky lg:top-24 h-[500px] lg:h-[calc(100vh-200px)]">
-            <div className="w-full h-full rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
-              <GoogleMap 
-                onLocationSelect={(location) => {
-                  setOfficeLocation(location);
-                }}
-                onMapReady={(mapInstance, loaded) => {
-                  setMap(mapInstance);
-                  setIsMapLoaded(loaded);
-                }}
-              />
-              {isMapLoaded && map && screen !== 'data' && (
-                <RouteVisualization 
-                  map={map} 
-                  isLoaded={isMapLoaded}
-                  routes={screen === 'optimization' && !optimizationScenario ? currentRoutes : routes}
+        <div className={`grid grid-cols-1 ${screen === 'data' ? '' : 'lg:grid-cols-2'} gap-8`}>
+          {/* Map - Hidden on first screen */}
+          {screen !== 'data' && (
+            <div className="lg:sticky lg:top-24 h-[500px] lg:h-[calc(100vh-200px)]">
+              <div className="w-full h-full rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
+                <GoogleMap 
+                  onLocationSelect={(location) => {
+                    setOfficeLocation(location);
+                  }}
+                  onMapReady={(mapInstance, loaded) => {
+                    setMap(mapInstance);
+                    setIsMapLoaded(loaded);
+                  }}
                 />
-              )}
+                {isMapLoaded && map && (
+                  <RouteVisualization 
+                    map={map} 
+                    isLoaded={isMapLoaded}
+                    routes={screen === 'optimization' && !optimizationScenario ? currentRoutes : routes}
+                  />
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Content */}
           <div className="space-y-6">
@@ -264,13 +266,26 @@ export default function Home() {
                     </div>
                   ) : (
                     <>
+                      {/* Header with CTA Above Fold */}
                       <div className="bg-white rounded-lg border border-gray-200 p-6">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                          Optimized Routes Generated
+                        <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                          Choose Your Optimization Strategy
                         </h2>
-                        <p className="text-sm text-gray-600">
-                          Routes mapped to your office location. Choose your optimization strategy.
+                        <p className="text-base text-gray-600 mb-6">
+                          Routes mapped to your office location. Select the optimization approach that best fits your needs.
                         </p>
+                        
+                        {/* CTA Above Fold */}
+                        {optimizationScenario && (
+                          <div className="mb-6">
+                            <Button
+                              onClick={() => handleSelectScenario(optimizationScenario)}
+                              className="bg-swvl-primary hover:bg-swvl-primary/90 text-white px-8 py-3 text-base font-semibold rounded-md transition-colors"
+                            >
+                              View Optimized Results
+                            </Button>
+                          </div>
+                        )}
                       </div>
 
                       <ScenarioComparison
@@ -302,17 +317,23 @@ export default function Home() {
                   transition={{ duration: 0.3 }}
                   className="space-y-6"
                 >
+                  {/* Header with CTA Above Fold */}
                   <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                      Optimized Transportation Solution
+                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                      Your Optimized Transportation Solution
                     </h2>
-                    <p className="text-sm text-gray-600 mb-6">
+                    <p className="text-base text-gray-600 mb-6">
                       {optimizationScenario === 'cost-saving' 
                         ? 'Cost Efficient: Minimizing operational costs with larger vehicles'
                         : optimizationScenario === 'optimum'
                         ? 'Optimum: Balanced approach for cost and experience'
                         : 'Experience: Optimizing for employee comfort and shorter routes'}
                     </p>
+                    
+                    {/* CTA Above Fold */}
+                    <div className="mb-6">
+                      <CTASection onBookCall={handleBookCall} onCallNow={handleCallNow} compact />
+                    </div>
 
                     <div className="space-y-3">
                       {routes.map((route) => (
@@ -376,8 +397,6 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-
-                  <CTASection onBookCall={handleBookCall} onCallNow={handleCallNow} />
 
                   <div className="flex justify-between">
                     <Button variant="outline" onClick={() => setScreen('optimization')}>

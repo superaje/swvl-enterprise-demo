@@ -100,96 +100,119 @@ export default function GoogleSheetView({ onOptimize }: GoogleSheetViewProps) {
   const inconsistentShifts = passengerData.filter(r => r.shiftStart !== '9:00' || r.shiftEnd !== '14:00').length;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-      {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-900 mb-1">
-          Current Employee Data Management
-        </h2>
-        <p className="text-sm text-gray-600">
-          {passengerData.length} employees • Multiple spreadsheets • Inconsistent data
+    <div>
+      {/* Header with Title, Subtitle, and CTA Above Fold */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          Looks familiar?
+        </h1>
+        <p className="text-lg text-gray-600 mb-6">
+          Stop handling your transportation like it&apos;s 1999
         </p>
+        
+        {/* CTA Above Fold */}
+        <div className="mb-8">
+          <Button
+            onClick={onOptimize}
+            className="bg-swvl-primary hover:bg-swvl-primary/90 text-white px-8 py-3 text-base font-semibold rounded-md transition-colors"
+          >
+            Optimize My Routes
+          </Button>
+        </div>
       </div>
 
       {/* Data Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          {/* Table Header */}
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Company Latitude
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Company Longitude
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Employee Latitude
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Employee Longitude
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Shift Start
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Shift End
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Emp Count
-              </th>
-            </tr>
-          </thead>
-          
-          {/* Table Body */}
-          <tbody className="bg-white divide-y divide-gray-200">
-            {passengerData.map((row, index) => (
-              <tr
-                key={row.id}
-                className={`${getRowColor(index, row)} hover:bg-gray-50 transition-colors`}
-              >
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {row.id}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700">
-                  {row.companyLat.toFixed(8)}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700">
-                  {row.companyLng.toFixed(8)}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700">
-                  {row.employeeLat.toFixed(8)}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700">
-                  {row.employeeLng.toFixed(8)}
-                </td>
-                <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
-                  row.shiftStart !== '9:00' ? 'text-orange-600' : 'text-gray-900'
-                }`}>
-                  {row.shiftStart}
-                </td>
-                <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
-                  row.shiftEnd !== '14:00' ? 'text-orange-600' : 'text-gray-900'
-                }`}>
-                  {row.shiftEnd}
-                </td>
-                <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
-                  row.empCount !== 12 ? 'text-red-600' : 'text-gray-900'
-                }`}>
-                  {row.empCount}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        {/* Table Header */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-medium text-gray-900">
+                Current Employee Data Management
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                {passengerData.length} employees • Multiple spreadsheets • Inconsistent data
+              </p>
+            </div>
+          </div>
+        </div>
 
-      {/* Summary */}
-      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-        <div className="flex items-center justify-between">
+        {/* Scrollable Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  ID
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Company Latitude
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Company Longitude
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Employee Latitude
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Employee Longitude
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Shift Start
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Shift End
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Emp Count
+                </th>
+              </tr>
+            </thead>
+            
+            <tbody className="bg-white divide-y divide-gray-200">
+              {passengerData.map((row, index) => (
+                <tr
+                  key={row.id}
+                  className={`${getRowColor(index, row)} hover:bg-gray-50 transition-colors`}
+                >
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {row.id}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700">
+                    {row.companyLat.toFixed(8)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700">
+                    {row.companyLng.toFixed(8)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700">
+                    {row.employeeLat.toFixed(8)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700">
+                    {row.employeeLng.toFixed(8)}
+                  </td>
+                  <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
+                    row.shiftStart !== '9:00' ? 'text-orange-600' : 'text-gray-900'
+                  }`}>
+                    {row.shiftStart}
+                  </td>
+                  <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
+                    row.shiftEnd !== '14:00' ? 'text-orange-600' : 'text-gray-900'
+                  }`}>
+                    {row.shiftEnd}
+                  </td>
+                  <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
+                    row.empCount !== 12 ? 'text-red-600' : 'text-gray-900'
+                  }`}>
+                    {row.empCount}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Summary Footer */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
           <div className="flex items-center gap-6 text-sm">
             <div>
               <span className="text-gray-600">Total Rows: </span>
@@ -204,12 +227,6 @@ export default function GoogleSheetView({ onOptimize }: GoogleSheetViewProps) {
               <span className="font-semibold text-red-600">{inconsistentCount}</span>
             </div>
           </div>
-          <Button
-            onClick={onOptimize}
-            className="bg-swvl-primary hover:bg-swvl-primary/90 text-white px-6 py-2.5 text-sm font-medium rounded-md transition-colors"
-          >
-            Optimize My Routes
-          </Button>
         </div>
       </div>
     </div>
