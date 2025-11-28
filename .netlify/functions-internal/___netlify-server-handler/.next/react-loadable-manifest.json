@@ -1,10 +1,1 @@
-{
-  "app/page.tsx -> @/components/VehicleSelector/VehicleSelector3D": {
-    "id": 812,
-    "files": [
-      "static/chunks/b536a0f1.935d5b8596592681.js",
-      "static/chunks/561.ec3417f6d73e494b.js",
-      "static/chunks/812.d770e56a72552871.js"
-    ]
-  }
-}
+{}
